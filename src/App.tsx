@@ -1,4 +1,3 @@
-import React from 'react';
 import { DixonColesCalculator } from './components/calculator/DixonColesCalculator';
 import { TeamDataForm } from './components/data-input/TeamDataForm';
 import { ValidationDashboard } from './components/validation/ValidationDashboard';

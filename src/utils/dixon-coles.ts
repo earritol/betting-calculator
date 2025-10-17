@@ -1,4 +1,4 @@
-import type { DixonColesParams, Probabilities } from '../types/betting';
+import type { Probabilities } from '../types/betting';
 import { poissonPDF } from './poisson';
 
 export function calculateDixonColesProbabilities(
