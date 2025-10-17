@@ -1,15 +1,16 @@
 import React from 'react';
-import { useBettingCalculator } from '../../hooks/useBettingCalculator';
+import { useBettingCalculatorContext } from '../../context/BettingCalculatorContext';
 
 export const TeamDataForm: React.FC = () => {
-  const { matchData, updateMatchData } = useBettingCalculator();
+  const { matchData, updateMatchData } = useBettingCalculatorContext();
 
   const handleTeamChange = (team: 'local' | 'visitor', field: string, value: number) => {
+    const numericValue = isNaN(value) ? 0 : value;    
     updateMatchData({
       ...matchData,
       [team]: {
         ...matchData[team],
-        [field]: value
+        [field]: numericValue
       }
     });
   };

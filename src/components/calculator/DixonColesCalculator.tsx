@@ -1,8 +1,8 @@
 import React from 'react';
-import { useBettingCalculator } from '../../hooks/useBettingCalculator';
+import { useBettingCalculatorContext } from '../../context/BettingCalculatorContext';
 
 export const DixonColesCalculator: React.FC = () => {
-  const { results, matchData } = useBettingCalculator();
+  const { results, matchData } = useBettingCalculatorContext();
 
   if (!results) return (
     <div className="p-8 text-center">

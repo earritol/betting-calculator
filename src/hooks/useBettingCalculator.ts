@@ -1,9 +1,7 @@
+import { useState, useEffect, useMemo } from 'react';
 import type { MatchData, CalculationResult } from '../types/betting';
-import { useState, useEffect } from 'react';
 import { calculateDixonColesProbabilities } from '../utils/dixon-coles';
 
-
-// Añadir función calculateKelly que falta
 const calculateKelly = (probability: number, odds: number): number => {
   if (odds <= 1 || probability <= 0) return 0;
   const edge = (probability * odds) - 1;
@@ -23,71 +21,78 @@ export const useBettingCalculator = () => {
   const [matchData, setMatchData] = useState<MatchData>(initialMatchData);
   const [results, setResults] = useState<CalculationResult | null>(null);
 
-  const calculateAttackDefense = () => {
-    const { local, visitor, leagueAverages } = matchData;
-    
-    const limitValue = (value: number) => Math.min(Math.max(value, 0.7), 1.3);
-    
-    const attackLocal = limitValue(local.goalsFor / leagueAverages.avgGoalsFor);
-    const defenseLocal = limitValue(local.goalsAgainst / leagueAverages.avgGoalsAgainst);
-    const attackVisitor = limitValue(visitor.goalsFor / leagueAverages.avgGoalsFor);
-    const defenseVisitor = limitValue(visitor.goalsAgainst / leagueAverages.avgGoalsAgainst);
-
-    return { attackLocal, defenseLocal, attackVisitor, defenseVisitor };
-  };
-
-  const calculateLambdas = () => {
-    const { leagueAverages } = matchData;
-    const { attackLocal, defenseLocal, attackVisitor, defenseVisitor } = calculateAttackDefense();
-
-    const lambdaLocal = attackLocal * defenseVisitor * leagueAverages.avgGoalsFor;
-    const lambdaVisitor = attackVisitor * defenseLocal * leagueAverages.avgGoalsFor;
-
-    const correctionFactor = 1 - (0.03 * Math.abs(lambdaLocal - lambdaVisitor));
-    
-    const lambdaLocalAdjusted = lambdaLocal * correctionFactor * 0.8;
-    const lambdaVisitorAdjusted = lambdaVisitor * correctionFactor;
-
-    return {
-      lambdaLocal: lambdaLocalAdjusted,
-      lambdaVisitor: lambdaVisitorAdjusted,
-      rho: 0.02
-    };
-  };
-
-  const calculateResults = () => {
-    const params = calculateLambdas();
-    const probabilities = calculateDixonColesProbabilities(
-      params.lambdaLocal,
-      params.lambdaVisitor,
-      params.rho
-    );
-
-    const value = (probabilities.local * matchData.odds.local) - 1;
-    const kellyPercentage = calculateKelly(probabilities.local, matchData.odds.local);
-    const suggestedStake = Math.min(kellyPercentage * 100, 10);
-
-    let decision = 'NO APOSTAR';
-    if (value > 0.1) decision = 'APOSTAR';
-    else if (value > 0.05) decision = 'CONSIDERAR';
-
-    setResults({
-      params,
-      probabilities,
-      value,
-      kellyPercentage,
-      suggestedStake,
-      decision
-    });
-  };
-
+  // El cálculo se ejecuta cada vez que matchData cambia.
   useEffect(() => {
-    calculateResults();
-  }, [matchData]);
+    const calculateResults = () => {
+      try {
+        console.log('🧮 Recalculando con datos:', matchData);
+        
+        // Calcular fuerzas
+        const limitValue = (value: number) => Math.min(Math.max(value, 0.7), 1.3);
+        const attackLocal = limitValue(matchData.local.goalsFor / matchData.leagueAverages.avgGoalsFor);
+        const defenseLocal = limitValue(matchData.local.goalsAgainst / matchData.leagueAverages.avgGoalsAgainst);
+        const attackVisitor = limitValue(matchData.visitor.goalsFor / matchData.leagueAverages.avgGoalsFor);
+        const defenseVisitor = limitValue(matchData.visitor.goalsAgainst / matchData.leagueAverages.avgGoalsAgainst);
 
-  return {
-    matchData,
-    results,
-    updateMatchData: setMatchData
+        // Calcular lambdas
+        const lambdaLocal = attackLocal * defenseVisitor * matchData.leagueAverages.avgGoalsFor;
+        const lambdaVisitor = attackVisitor * defenseLocal * matchData.leagueAverages.avgGoalsFor;
+        const correctionFactor = 1 - (0.03 * Math.abs(lambdaLocal - lambdaVisitor));
+        const lambdaLocalAdjusted = lambdaLocal * correctionFactor * 0.8;
+        const lambdaVisitorAdjusted = lambdaVisitor * correctionFactor;
+
+        const params = {
+          lambdaLocal: lambdaLocalAdjusted,
+          lambdaVisitor: lambdaVisitorAdjusted,
+          rho: 0.02
+        };
+
+        const probabilities = calculateDixonColesProbabilities(
+          params.lambdaLocal,
+          params.lambdaVisitor,
+          params.rho
+        );
+
+        const value = (probabilities.local * matchData.odds.local) - 1;
+        const kellyPercentage = calculateKelly(probabilities.local, matchData.odds.local);
+        const suggestedStake = Math.min(kellyPercentage * 100, 10);
+
+        let decision = 'NO APOSTAR';
+        if (value > 0.1) decision = 'APOSTAR';
+        else if (value > 0.05) decision = 'CONSIDERAR';
+
+        const newResults = {
+          params,
+          probabilities,
+          value,
+          kellyPercentage,
+          suggestedStake,
+          decision
+        };
+
+        console.log('📊 Resultados calculados:', newResults);
+        setResults(newResults);
+        
+      } catch (error) {
+        console.error('Error en cálculos:', error);
+        setResults(null);
+      }
+    };
+
+    calculateResults();
+  }, [matchData]); // Solo depende de matchData
+
+  const updateMatchData = (newData: MatchData) => {
+    console.log('📝 Actualizando datos:', newData);
+    setMatchData(newData);
   };
+
+  // Usamos useMemo para asegurar que el objeto de contexto no se recree innecesariamente
+  const contextValue = useMemo(() => ({
+      matchData,
+      results,
+      updateMatchData,
+  }), [matchData, results]);
+
+  return contextValue;
 };

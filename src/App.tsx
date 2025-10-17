@@ -1,11 +1,16 @@
 import { DixonColesCalculator } from './components/calculator/DixonColesCalculator';
 import { TeamDataForm } from './components/data-input/TeamDataForm';
 import { ValidationDashboard } from './components/validation/ValidationDashboard';
+import { BettingCalculatorProvider } from './context/BettingCalculatorContext';
+import { useBettingCalculator } from './hooks/useBettingCalculator';
 
-function App() {
+function AppContent() {
+  // Este componente ahora puede existir si necesitas acceder a `results` aquí,
+  // pero para el `key` lo haremos de otra forma.
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-gray-100 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+      <div className="container mx-auto max-w-7xl px-4">
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-gray-800 mb-4">
@@ -45,6 +50,16 @@ function App() {
         </div>
       </div>
     </div>
+  );
+}
+
+function App() {
+  const calculator = useBettingCalculator();
+
+  return (
+    <BettingCalculatorProvider value={calculator}>
+      <AppContent />
+    </BettingCalculatorProvider>
   );
 }
 
