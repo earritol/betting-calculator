@@ -40,3 +40,14 @@ export interface CalculationResult {
   suggestedStake: number;
   decision: string;
 }
+
+export const AppModule = {
+  DIXON_COLES: 'dixon-coles',
+  XG_REALTIME: 'xg-realtime'
+} as const;
+
+export type AppModule = typeof AppModule[keyof typeof AppModule];
+
+export interface AppState {
+  currentModule: AppModule;
+}
