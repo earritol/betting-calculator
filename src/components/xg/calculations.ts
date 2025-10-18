@@ -65,9 +65,9 @@ export const calculatePredictions = (
   const homeMostProbable = Math.round(homeFinalGoals);
   const homeMax = Math.ceil(homeFinalGoals + 0.3);
   
-  const awayMin = Math.floor(awayFinalGoals);
+ /*  const awayMin = Math.floor(awayFinalGoals);
   const awayMostProbable = Math.round(awayFinalGoals);
-  const awayMax = Math.ceil(awayFinalGoals + 0.3);
+  const awayMax = Math.ceil(awayFinalGoals + 0.3); */
 
   // PROBABILIDADES USANDO POISSON
   const poisson = (k: number, lambda: number): number => {
@@ -130,6 +130,7 @@ export const calculatePredictions = (
 // Funciones auxiliares
 const calculateUrgencyFactor = (goals: number, isHome: boolean): number => {
   // Simplificado - en tu Google Sheets es más complejo
+  console.log(goals, isHome);
   return 1.0; // Por defecto
 };
 
