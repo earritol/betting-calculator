@@ -14,7 +14,8 @@ const initialMatchData: MatchData = {
   local: { name: 'Local', goalsFor: 2.2, goalsAgainst: 1.1, xG: 0, xGA: 0 },
   visitor: { name: 'Visitante', goalsFor: 1.6, goalsAgainst: 1.3, xG: 0, xGA: 0 },
   odds: { local: 2.4, draw: 3.5, visitor: 2.8 },
-  leagueAverages: { avgGoalsFor: 1.65, avgGoalsAgainst: 1.42 }
+  leagueAverages: { avgGoalsFor: 1.65, avgGoalsAgainst: 1.42 },
+  weights: { modelo: 0.70, xG: 0.30 }
 };
 
 export const useBettingCalculator = () => {
@@ -52,13 +53,16 @@ export const useBettingCalculator = () => {
         const lambdaXgLocal = (xGLocal + xGAVisitor) / 2;
         const lambdaXgVisitor = (xGVisitor + xGALocal) / 2;
 
-        // PASO 6-7: Calcular Lambda Final (combinación 70/30)
+        // PASO 6-7: Calcular Lambda Final (combinación con pesos configurables)
         // PASO 14: Si no hay xG, usar Lambda Actual directamente
+        const pesoModelo = matchData.weights.modelo;
+        const pesoXg = matchData.weights.xG;
+
         const lambdaFinalLocal = hasXgData
-          ? (lambdaLocalAdjusted * 0.70) + (lambdaXgLocal * 0.30)
+          ? (lambdaLocalAdjusted * pesoModelo) + (lambdaXgLocal * pesoXg)
           : lambdaLocalAdjusted;
         const lambdaFinalVisitor = hasXgData
-          ? (lambdaVisitorAdjusted * 0.70) + (lambdaXgVisitor * 0.30)
+          ? (lambdaVisitorAdjusted * pesoModelo) + (lambdaXgVisitor * pesoXg)
           : lambdaVisitorAdjusted;
 
         const params = {

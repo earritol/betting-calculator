@@ -138,7 +138,7 @@ export const DixonColesCalculator: React.FC = () => {
         </div>
         {(matchData.local.xG || matchData.local.xGA || matchData.visitor.xG || matchData.visitor.xGA) ? (
           <p className="text-sm text-indigo-600 mt-3">
-            ⚡ Lambda Final = (Actual × 0.70) + (xG × 0.30)
+            ⚡ Lambda Final = (Actual × {Math.round(matchData.weights.modelo * 100)}%) + (xG × {Math.round(matchData.weights.xG * 100)}%)
           </p>
         ) : (
           <p className="text-sm text-gray-500 mt-3">
