@@ -94,6 +94,59 @@ export const DixonColesCalculator: React.FC = () => {
         </div>
       </div>
 
+      {/* Desglose de Lambdas (xG integrado) */}
+      <div className="mb-8">
+        <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
+          <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
+          Desglose Lambda (Modelo + xG)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+            <h4 className="font-medium text-indigo-800 mb-3">Equipo Local</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lambda Actual:</span>
+                <span className="font-semibold">{results.params.lambdaLocal.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lambda xG:</span>
+                <span className="font-semibold">{results.params.lambdaXgLocal.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between border-t border-indigo-200 pt-2">
+                <span className="text-gray-700 font-medium">Lambda Final:</span>
+                <span className="font-bold text-indigo-700">{results.params.lambdaFinalLocal.toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+          <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-200">
+            <h4 className="font-medium text-indigo-800 mb-3">Equipo Visitante</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lambda Actual:</span>
+                <span className="font-semibold">{results.params.lambdaVisitor.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Lambda xG:</span>
+                <span className="font-semibold">{results.params.lambdaXgVisitor.toFixed(4)}</span>
+              </div>
+              <div className="flex justify-between border-t border-indigo-200 pt-2">
+                <span className="text-gray-700 font-medium">Lambda Final:</span>
+                <span className="font-bold text-indigo-700">{results.params.lambdaFinalVisitor.toFixed(4)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        {(matchData.local.xG || matchData.local.xGA || matchData.visitor.xG || matchData.visitor.xGA) ? (
+          <p className="text-sm text-indigo-600 mt-3">
+            ⚡ Lambda Final = (Actual × 0.70) + (xG × 0.30)
+          </p>
+        ) : (
+          <p className="text-sm text-gray-500 mt-3">
+            ℹ️ Sin datos xG — Lambda Final = Lambda Actual
+          </p>
+        )}
+      </div>
+
       {/* Probabilidades Finales */}
       <div>
         <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">

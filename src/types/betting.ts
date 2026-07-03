@@ -2,6 +2,8 @@ export interface TeamData {
   name: string;
   goalsFor: number;
   goalsAgainst: number;
+  xG?: number;
+  xGA?: number;
 }
 
 export interface MatchData {
@@ -21,6 +23,10 @@ export interface MatchData {
 export interface DixonColesParams {
   lambdaLocal: number;
   lambdaVisitor: number;
+  lambdaXgLocal: number;
+  lambdaXgVisitor: number;
+  lambdaFinalLocal: number;
+  lambdaFinalVisitor: number;
   rho: number;
 }
 

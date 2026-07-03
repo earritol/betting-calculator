@@ -11,8 +11,8 @@ const calculateKelly = (probability: number, odds: number): number => {
 };
 
 const initialMatchData: MatchData = {
-  local: { name: 'Local', goalsFor: 2.2, goalsAgainst: 1.1 },
-  visitor: { name: 'Visitante', goalsFor: 1.6, goalsAgainst: 1.3 },
+  local: { name: 'Local', goalsFor: 2.2, goalsAgainst: 1.1, xG: 0, xGA: 0 },
+  visitor: { name: 'Visitante', goalsFor: 1.6, goalsAgainst: 1.3, xG: 0, xGA: 0 },
   odds: { local: 2.4, draw: 3.5, visitor: 2.8 },
   leagueAverages: { avgGoalsFor: 1.65, avgGoalsAgainst: 1.42 }
 };
@@ -34,22 +34,47 @@ export const useBettingCalculator = () => {
         const attackVisitor = limitValue(matchData.visitor.goalsFor / matchData.leagueAverages.avgGoalsFor);
         const defenseVisitor = limitValue(matchData.visitor.goalsAgainst / matchData.leagueAverages.avgGoalsAgainst);
 
-        // Calcular lambdas
+        // Calcular lambdas (modelo actual - no modificar)
         const lambdaLocal = attackLocal * defenseVisitor * matchData.leagueAverages.avgGoalsFor;
         const lambdaVisitor = attackVisitor * defenseLocal * matchData.leagueAverages.avgGoalsFor;
         const correctionFactor = 1 - (0.03 * Math.abs(lambdaLocal - lambdaVisitor));
         const lambdaLocalAdjusted = lambdaLocal * correctionFactor * 0.8;
         const lambdaVisitorAdjusted = lambdaVisitor * correctionFactor;
 
+        // PASO 4-5: Calcular Lambda xG (independiente del modelo actual)
+        const xGLocal = matchData.local.xG || 0;
+        const xGALocal = matchData.local.xGA || 0;
+        const xGVisitor = matchData.visitor.xG || 0;
+        const xGAVisitor = matchData.visitor.xGA || 0;
+
+        const hasXgData = xGLocal > 0 || xGALocal > 0 || xGVisitor > 0 || xGAVisitor > 0;
+
+        const lambdaXgLocal = (xGLocal + xGAVisitor) / 2;
+        const lambdaXgVisitor = (xGVisitor + xGALocal) / 2;
+
+        // PASO 6-7: Calcular Lambda Final (combinación 70/30)
+        // PASO 14: Si no hay xG, usar Lambda Actual directamente
+        const lambdaFinalLocal = hasXgData
+          ? (lambdaLocalAdjusted * 0.70) + (lambdaXgLocal * 0.30)
+          : lambdaLocalAdjusted;
+        const lambdaFinalVisitor = hasXgData
+          ? (lambdaVisitorAdjusted * 0.70) + (lambdaXgVisitor * 0.30)
+          : lambdaVisitorAdjusted;
+
         const params = {
           lambdaLocal: lambdaLocalAdjusted,
           lambdaVisitor: lambdaVisitorAdjusted,
+          lambdaXgLocal,
+          lambdaXgVisitor,
+          lambdaFinalLocal,
+          lambdaFinalVisitor,
           rho: 0.02
         };
 
+        // PASO 8-9: Usar Lambda Final en Poisson + Dixon-Coles
         const probabilities = calculateDixonColesProbabilities(
-          params.lambdaLocal,
-          params.lambdaVisitor,
+          params.lambdaFinalLocal,
+          params.lambdaFinalVisitor,
           params.rho
         );
 

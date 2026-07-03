@@ -75,6 +75,32 @@ export const TeamDataForm: React.FC = () => {
               placeholder="Ej: 1.1"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              xG (Local)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={matchData.local.xG || ''}
+              onChange={(e) => handleTeamChange('local', 'xG', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Ej: 1.40 (opcional)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              xGA (Local)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={matchData.local.xGA || ''}
+              onChange={(e) => handleTeamChange('local', 'xGA', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              placeholder="Ej: 0.90 (opcional)"
+            />
+          </div>
         </div>
       </div>
 
@@ -109,6 +135,32 @@ export const TeamDataForm: React.FC = () => {
               onChange={(e) => handleTeamChange('visitor', 'goalsAgainst', parseFloat(e.target.value) || 0)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               placeholder="Ej: 1.3"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              xG (Visitante)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={matchData.visitor.xG || ''}
+              onChange={(e) => handleTeamChange('visitor', 'xG', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+              placeholder="Ej: 1.00 (opcional)"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              xGA (Visitante)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={matchData.visitor.xGA || ''}
+              onChange={(e) => handleTeamChange('visitor', 'xGA', parseFloat(e.target.value) || 0)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+              placeholder="Ej: 1.30 (opcional)"
             />
           </div>
         </div>
