@@ -18,6 +18,10 @@ export interface MatchData {
     avgGoalsFor: number;
     avgGoalsAgainst: number;
   };
+  weights: {
+    modelo: number;
+    xG: number;
+  };
 }
 
 export interface DixonColesParams {
