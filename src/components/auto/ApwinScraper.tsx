@@ -8,30 +8,28 @@ interface ScrapedMatchData {
     goalsConceded: number;
     goalsScoredHome: number;
     goalsConcededHome: number;
-    xG: number;
-    xGA: number;
-    xGHome: number;
-    xGAHome: number;
+    goalsScoredAway: number;
+    goalsConcededAway: number;
   };
   awayTeam: {
     name: string;
     goalsScored: number;
     goalsConceded: number;
+    goalsScoredHome: number;
+    goalsConcededHome: number;
     goalsScoredAway: number;
     goalsConcededAway: number;
-    xG: number;
-    xGA: number;
-    xGAway: number;
-    xGAAway: number;
   };
-  odds: {
-    "1xbet": { home: number; draw: number; away: number };
-  };
+  odds: Array<{
+    bookmaker: string;
+    home: number;
+    draw: number;
+    away: number;
+  }>;
   league: {
-    name: string;
-    avgGoals?: number;
-    avgGoalsPerMatch?: number;
+    avgGoalsPerMatch: number;
   };
+  matchDate: string;
 }
 
 interface OddsData {
@@ -68,9 +66,7 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
     setResult(null);
 
     try {
-      const allOdds: OddsData[] = [];
-
-      // 1. Scrape APWin para xG/xGA + cuotas 1xBet
+      // Scrape APWin
       const matchData = await callEdgeFunction<{ success: boolean; data: ScrapedMatchData }>('scrape-match', {
         url: apwinUrl.trim(),
       });
@@ -81,49 +77,22 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
 
       const { data } = matchData;
 
-      // Cuotas de 1xBet desde APWin
-      if (data.odds?.["1xbet"]?.home > 0) {
-        allOdds.push({
-          bookmaker: '1xbet',
-          home: data.odds["1xbet"].home,
-          draw: data.odds["1xbet"].draw,
-          away: data.odds["1xbet"].away,
-        });
-      }
-
-      // 2. Intentar obtener cuotas de Pinnacle
-      try {
-        const oddsData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
-          homeTeam: data.homeTeam.name,
-          awayTeam: data.awayTeam.name,
-          league: '',
-          apwinUrl: apwinUrl.trim(),
-        });
-
-        if (oddsData.success && oddsData.odds) {
-          for (const odd of oddsData.odds) {
-            if (!allOdds.find(o => o.bookmaker === odd.bookmaker)) {
-              allOdds.push(odd);
-            }
-          }
-        }
-      } catch {
-        console.warn('No se pudieron obtener cuotas adicionales');
-      }
+      // Las cuotas vienen directamente como array del nuevo parser
+      const allOdds: OddsData[] = data.odds || [];
 
       // Enviar TODOS los datos al padre
       onDataScraped({
-        xG: { home: data.homeTeam.xG, away: data.awayTeam.xG },
-        xGA: { home: data.homeTeam.xGA, away: data.awayTeam.xGA },
+        xG: { home: 0, away: 0 }, // xG requiere browser, se deja manual
+        xGA: { home: 0, away: 0 },
         odds: allOdds,
         goalsFor: { home: data.homeTeam.goalsScored, away: data.awayTeam.goalsScored },
         goalsAgainst: { home: data.homeTeam.goalsConceded, away: data.awayTeam.goalsConceded },
-        leagueAvg: data.league?.avgGoals || data.league?.avgGoalsPerMatch || 0,
+        leagueAvg: data.league?.avgGoalsPerMatch || 0,
         names: { home: data.homeTeam.name, away: data.awayTeam.name },
       });
 
       const bookmakers = allOdds.map(o => o.bookmaker).join(', ') || 'ninguna';
-      setResult(`✅ xG/xGA extraídos. Cuotas disponibles: ${bookmakers}`);
+      setResult(`✅ Datos extraídos. Cuotas: ${bookmakers}. xG/xGA: ingresa manualmente.`);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
