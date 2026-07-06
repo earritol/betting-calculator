@@ -114,9 +114,27 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
       }
 
       const { data } = matchData;
-      setScrapedData(data);
 
-      // Enviar datos con el bookmaker actualmente seleccionado
+      // Intentar obtener cuotas de Pinnacle vía scrape-odds
+      try {
+        const pinnacleData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
+          homeTeam: data.homeTeam.name,
+          awayTeam: data.awayTeam.name,
+          league: detectLeague(apwinUrl),
+        });
+
+        if (pinnacleData.success && pinnacleData.odds) {
+          // Agregar cuotas de Pinnacle al array de odds del data
+          const pinnacleOdds = pinnacleData.odds.filter((o: OddsData) => o.bookmaker === 'pinnacle');
+          if (pinnacleOdds.length > 0) {
+            data.odds = [...(data.odds || []), ...pinnacleOdds];
+          }
+        }
+      } catch {
+        console.warn('Pinnacle odds not available');
+      }
+
+      setScrapedData(data);
       sendDataWithBookmaker(data, selectedBookmaker);
 
       const bookmakers = (data.odds || []).map((o: OddsData) => o.bookmaker).join(', ') || 'ninguna';
@@ -127,6 +145,30 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
     } finally {
       setLoading(false);
     }
+  };
+
+  // Detectar liga desde la URL de APWin para buscar en Pinnacle
+  const detectLeague = (url: string): string => {
+    const leaguePatterns: Record<string, string[]> = {
+      'england': ['premier-league', 'england', 'epl'],
+      'spain': ['la-liga', 'spain', 'espana'],
+      'italy': ['serie-a', 'italy', 'italia'],
+      'germany': ['bundesliga', 'germany', 'alemania'],
+      'france': ['ligue-1', 'france', 'francia'],
+      'brazil': ['serie-a', 'brazil', 'brasil'],
+      'mexico': ['liga-mx', 'mexico'],
+      'netherlands': ['eredivisie', 'netherlands', 'holanda'],
+      'portugal': ['primeira', 'portugal'],
+      'sweden': ['allsvenskan', 'suecia', 'sweden'],
+      'champions_league': ['champions', 'ucl'],
+      'world': ['copa-del-mundo', 'world-cup', 'mundial'],
+    };
+
+    const urlLower = url.toLowerCase();
+    for (const [league, patterns] of Object.entries(leaguePatterns)) {
+      if (patterns.some(p => urlLower.includes(p))) return league;
+    }
+    return '';
   };
 
   return (
@@ -164,19 +206,25 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
           Casa de apuestas preferida (para cuotas)
         </label>
         <div className="flex gap-2">
-          {['pinnacle', '1xbet', 'bet365'].map((bk) => (
-            <button
-              key={bk}
-              onClick={() => handleBookmakerChange(bk)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                selectedBookmaker === bk
-                  ? 'border-purple-500 bg-purple-50 text-purple-700'
-                  : 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {bk === 'pinnacle' ? '📌 Pinnacle' : bk === '1xbet' ? '1️⃣ 1xBet' : '🎰 Bet365'}
-            </button>
-          ))}
+          {['pinnacle', '1xbet', 'bet365'].map((bk) => {
+            const isAvailable = scrapedData?.odds?.some(o => o.bookmaker === bk);
+            return (
+              <button
+                key={bk}
+                onClick={() => handleBookmakerChange(bk)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
+                  selectedBookmaker === bk
+                    ? 'border-purple-500 bg-purple-50 text-purple-700'
+                    : isAvailable
+                    ? 'border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100'
+                    : 'border-gray-100 bg-gray-50 text-gray-400'
+                }`}
+              >
+                {bk === 'pinnacle' ? '📌 Pinnacle' : bk === '1xbet' ? '1️⃣ 1xBet' : '🎰 Bet365'}
+                {scrapedData && !isAvailable && <span className="ml-1 text-xs">(N/D)</span>}
+              </button>
+            );
+          })}
         </div>
       </div>
 
