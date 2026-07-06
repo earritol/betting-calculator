@@ -7,5 +7,14 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false
+  },
+  server: {
+    proxy: {
+      '/api/football': {
+        target: 'https://api.football-data.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/football/, '/v4'),
+      }
+    }
   }
 })

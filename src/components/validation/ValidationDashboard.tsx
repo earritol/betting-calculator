@@ -13,6 +13,10 @@ export const ValidationDashboard: React.FC = () => {
 
   const calculateRealProbabilities = () => {
     const { local, draw, visitor } = matchData.odds;
+    // Si alguna cuota es 0, no se pueden calcular probabilidades implícitas
+    if (local <= 0 || draw <= 0 || visitor <= 0) {
+      return null;
+    }
     const totalImplied = (1/local) + (1/draw) + (1/visitor);
     
     return {
@@ -55,6 +59,11 @@ export const ValidationDashboard: React.FC = () => {
           <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
           Comparación de Probabilidades
         </h3>
+        {!realProbs ? (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+            <p className="text-sm text-gray-500">⚠️ Ingresa las cuotas del mercado para comparar con el modelo</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             { type: 'Local', model: results.probabilities.local, real: realProbs.local, color: 'blue' },
@@ -82,9 +91,11 @@ export const ValidationDashboard: React.FC = () => {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* Análisis de Valor y Decisión */}
+      {matchData.odds.local > 0 && matchData.odds.draw > 0 && matchData.odds.visitor > 0 ? (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Valor y Kelly */}
         <div>
@@ -135,6 +146,11 @@ export const ValidationDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      ) : (
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-center">
+          <p className="text-sm text-gray-500">⚠️ Ingresa las cuotas del mercado para ver el análisis de valor y la decisión de apuesta</p>
+        </div>
+      )}
     </div>
   );
 };

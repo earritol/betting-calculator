@@ -58,7 +58,7 @@ export const TeamDataForm: React.FC = () => {
       <div className="mb-8 p-6 bg-blue-50 rounded-xl border border-blue-200">
         <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
           <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-          Equipo Local
+          {matchData.local.name || 'Equipo Local'}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -120,7 +120,7 @@ export const TeamDataForm: React.FC = () => {
       <div className="mb-8 p-6 bg-red-50 rounded-xl border border-red-200">
         <h3 className="text-lg font-semibold text-red-800 mb-4 flex items-center">
           <span className="w-3 h-3 bg-red-500 rounded-full mr-2"></span>
-          Equipo Visitante
+          {matchData.visitor.name || 'Equipo Visitante'}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
