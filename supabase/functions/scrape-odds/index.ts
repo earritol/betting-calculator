@@ -20,97 +20,108 @@ interface OddsResult {
 // ========================================
 // PINNACLE - Guest API (no auth required)
 // ========================================
-async function scrapePinnacleOdds(league: string): Promise<OddsResult[]> {
+async function scrapePinnacleOdds(league: string, homeTeam: string, awayTeam: string): Promise<OddsResult[]> {
   try {
-    // Pinnacle expone su línea en un endpoint guest para soccer
-    // Sport ID 29 = Soccer
     const leagueMap: Record<string, number> = {
       "england": 1980, // Premier League
       "spain": 2196, // La Liga
       "italy": 2436, // Serie A
       "germany": 1842, // Bundesliga
       "france": 2036, // Ligue 1
-      "brazil": 1617, // Serie A Brasil
-      "mexico": 2095, // Liga MX
-      "netherlands": 2081, // Eredivisie
-      "portugal": 2160, // Primeira Liga
-      "sweden": 2221, // Allsvenskan
-      "champions_league": 1843, // UCL
+      "brazil": 1834, // Serie A Brasil
+      "mexico": 2242, // Liga MX
+      "netherlands": 1928, // Eredivisie
+      "portugal": 2386, // Primeira Liga
+      "sweden": 1728, // Allsvenskan
+      "champions_league": 2627, // UCL
+      "world": 2686, // World Cup
     };
 
     const leagueId = leagueMap[league];
     if (!leagueId) return [];
 
-    // Pinnacle guest matchups endpoint
-    const url = `https://guest.api.arcadia.pinnacle.com/0.1/leagues/${leagueId}/matchups`;
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "application/json",
-        "X-API-Key": "CmX2KcMrXuFmNg6YFbmTxE0y9CIrOi0R",
-        "Referer": "https://www.pinnacle.com/",
-      },
+    const headers = {
+      "Accept": "application/json",
+      "X-API-Key": "CmX2KcMrXuFmNg6YFbmTxE0y9CIrOi0R",
+      "Referer": "https://www.pinnacle.com/",
+    };
+
+    // 1. Get matchups for the league
+    const matchupsUrl = `https://guest.api.arcadia.pinnacle.com/0.1/leagues/${leagueId}/matchups`;
+    const matchupsResp = await fetch(matchupsUrl, { headers });
+    if (!matchupsResp.ok) return [];
+
+    const matchups = await matchupsResp.json();
+
+    // 2. Find the matchup that matches our teams
+    const normalise = (s: string) => s.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]/g, "");
+    const homeNorm = normalise(homeTeam).substring(0, 5);
+    const awayNorm = normalise(awayTeam).substring(0, 5);
+
+    const matchup = matchups.find((m: any) => {
+      if (m.type !== "matchup" || !m.participants) return false;
+      const names = m.participants.map((p: any) => normalise(p.name));
+      const homeMatch = names.some((n: string) => n.includes(homeNorm) || homeNorm.includes(n.substring(0, 5)));
+      const awayMatch = names.some((n: string) => n.includes(awayNorm) || awayNorm.includes(n.substring(0, 5)));
+      return homeMatch && awayMatch;
     });
 
-    if (!response.ok) return [];
-
-    const matchups = await response.json();
-    const results: OddsResult[] = [];
-
-    for (const matchup of matchups) {
-      if (matchup.type !== "matchup" || !matchup.prices) continue;
-
-      const homePrice = matchup.prices?.find((p: any) => p.designation === "home" && p.period === 0);
-      const drawPrice = matchup.prices?.find((p: any) => p.designation === "draw" && p.period === 0);
-      const awayPrice = matchup.prices?.find((p: any) => p.designation === "away" && p.period === 0);
-
-      if (homePrice && drawPrice && awayPrice) {
-        results.push({
-          bookmaker: "pinnacle",
-          home: homePrice.price,
-          draw: drawPrice.price,
-          away: awayPrice.price,
-          source: `matchup_${matchup.id}`,
-        });
+    if (!matchup) {
+      // If exact match not found, try all matchups and return all odds
+      const results: OddsResult[] = [];
+      for (const m of matchups.filter((x: any) => x.type === "matchup").slice(0, 5)) {
+        const odds = await getPinnacleMatchOdds(m.id, headers);
+        if (odds) {
+          const participants = m.participants || [];
+          const homeName = participants.find((p: any) => p.alignment === "home")?.name || "?";
+          const awayName = participants.find((p: any) => p.alignment === "away")?.name || "?";
+          results.push({ ...odds, source: `${homeName} vs ${awayName}` });
+        }
       }
+      return results;
     }
 
-    return results;
+    // 3. Get odds for this specific matchup
+    const odds = await getPinnacleMatchOdds(matchup.id, headers);
+    if (odds) return [odds];
+
+    return [];
   } catch (error) {
     console.error("Pinnacle scrape error:", error);
     return [];
   }
 }
 
-// Intento alternativo: Pinnacle straight odds endpoint
-async function scrapePinnacleMatchOdds(matchupId: number): Promise<OddsResult | null> {
+// Convert American odds to decimal
+function americanToDecimal(american: number): number {
+  if (american > 0) return 1 + (american / 100);
+  return 1 + (100 / Math.abs(american));
+}
+
+// Get odds for a specific Pinnacle matchup
+async function getPinnacleMatchOdds(matchupId: number, headers: Record<string, string>): Promise<OddsResult | null> {
   try {
     const url = `https://guest.api.arcadia.pinnacle.com/0.1/matchups/${matchupId}/markets/related/straight`;
-    const response = await fetch(url, {
-      headers: {
-        "Accept": "application/json",
-        "X-API-Key": "CmX2KcMrXuFmNg6YFbmTxE0y9CIrOi0R",
-        "Referer": "https://www.pinnacle.com/",
-      },
-    });
-
+    const response = await fetch(url, { headers });
     if (!response.ok) return null;
 
-    const data = await response.json();
-    // Parse 1X2 market (period 0 = full match)
-    const market = data.find((m: any) => m.type === "moneyline" && m.period === 0);
-    if (!market || !market.prices) return null;
+    const markets = await response.json();
+    const moneyline = markets.find((m: any) => m.type === "moneyline" && m.period === 0);
+    if (!moneyline || !moneyline.prices) return null;
 
-    const home = market.prices.find((p: any) => p.designation === "home");
-    const draw = market.prices.find((p: any) => p.designation === "draw");
-    const away = market.prices.find((p: any) => p.designation === "away");
+    const homePrice = moneyline.prices.find((p: any) => p.designation === "home");
+    const drawPrice = moneyline.prices.find((p: any) => p.designation === "draw");
+    const awayPrice = moneyline.prices.find((p: any) => p.designation === "away");
 
-    if (!home || !draw || !away) return null;
+    if (!homePrice || !drawPrice || !awayPrice) return null;
 
     return {
       bookmaker: "pinnacle",
-      home: home.price,
-      draw: draw.price,
-      away: away.price,
+      home: parseFloat(americanToDecimal(homePrice.price).toFixed(2)),
+      draw: parseFloat(americanToDecimal(drawPrice.price).toFixed(2)),
+      away: parseFloat(americanToDecimal(awayPrice.price).toFixed(2)),
       source: `pinnacle_matchup_${matchupId}`,
     };
   } catch {
@@ -176,25 +187,15 @@ serve(async (req) => {
   }
 
   try {
-    const { homeTeam, awayTeam, league, apwinUrl, pinnacleMatchupId } = await req.json();
+    const { homeTeam, awayTeam, league, apwinUrl } = await req.json();
 
     const results: OddsResult[] = [];
 
     // 1. Pinnacle
-    if (pinnacleMatchupId) {
-      const pinnacle = await scrapePinnacleMatchOdds(pinnacleMatchupId);
-      if (pinnacle) results.push(pinnacle);
-    } else if (league) {
-      const pinnacleAll = await scrapePinnacleOdds(league);
-      // Intentar matchear por nombre de equipo
-      const matched = pinnacleAll.find(r => 
-        r.source.includes(homeTeam?.toLowerCase()) || 
-        r.source.includes(awayTeam?.toLowerCase())
-      );
-      if (matched) results.push(matched);
-      // Si no matchea, devolver todas de esa liga para que el frontend elija
-      if (!matched && pinnacleAll.length > 0) {
-        results.push(...pinnacleAll.slice(0, 10)); // Primeras 10
+    if (league) {
+      const pinnacleAll = await scrapePinnacleOdds(league, homeTeam || '', awayTeam || '');
+      if (pinnacleAll.length > 0) {
+        results.push(...pinnacleAll);
       }
     }
 
