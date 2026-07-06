@@ -65,9 +65,6 @@ function AutoNavigation({ currentModule, setCurrentModule }: {
 // Módulo Dixon-Coles con selector automático
 function DixonColesAutoModule() {
   const { matchData, updateMatchData } = useBettingCalculatorContext();
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const handleScrapedData = (data: {
     xG: { home: number; away: number };
@@ -129,18 +126,6 @@ function DixonColesAutoModule() {
       <ApwinScraper
         onDataScraped={handleScrapedData}
       />
-
-      {/* Status */}
-      {status && !error && (
-        <div className="bg-green-50 p-3 rounded-lg border border-green-200 mb-6">
-          <p className="text-sm text-green-700">{status}</p>
-        </div>
-      )}
-      {error && (
-        <div className="bg-red-50 p-3 rounded-lg border border-red-200 mb-6">
-          <p className="text-sm text-red-700">❌ {error}</p>
-        </div>
-      )}
 
       {/* Layout Dixon-Coles */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
