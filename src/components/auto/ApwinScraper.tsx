@@ -29,7 +29,8 @@ interface ScrapedMatchData {
   };
   league: {
     name: string;
-    avgGoals: number;
+    avgGoals?: number;
+    avgGoalsPerMatch?: number;
   };
 }
 
@@ -45,11 +46,14 @@ interface ApwinScraperProps {
     xG: { home: number; away: number };
     xGA: { home: number; away: number };
     odds: { bookmaker: string; home: number; draw: number; away: number }[];
+    goalsFor?: { home: number; away: number };
+    goalsAgainst?: { home: number; away: number };
+    leagueAvg?: number;
+    names?: { home: string; away: string };
   }) => void;
-  league?: string;
 }
 
-export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped, league }) => {
+export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => {
   const [apwinUrl, setApwinUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,33 +92,34 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped, leagu
       }
 
       // 2. Intentar obtener cuotas de Pinnacle
-      if (league) {
-        try {
-          const oddsData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
-            homeTeam: data.homeTeam.name,
-            awayTeam: data.awayTeam.name,
-            league: league,
-            apwinUrl: apwinUrl.trim(),
-          });
+      try {
+        const oddsData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
+          homeTeam: data.homeTeam.name,
+          awayTeam: data.awayTeam.name,
+          league: '',
+          apwinUrl: apwinUrl.trim(),
+        });
 
-          if (oddsData.success && oddsData.odds) {
-            for (const odd of oddsData.odds) {
-              if (!allOdds.find(o => o.bookmaker === odd.bookmaker)) {
-                allOdds.push(odd);
-              }
+        if (oddsData.success && oddsData.odds) {
+          for (const odd of oddsData.odds) {
+            if (!allOdds.find(o => o.bookmaker === odd.bookmaker)) {
+              allOdds.push(odd);
             }
           }
-        } catch {
-          // Pinnacle es opcional, continuamos sin él
-          console.warn('No se pudieron obtener cuotas de Pinnacle');
         }
+      } catch {
+        console.warn('No se pudieron obtener cuotas adicionales');
       }
 
-      // Enviar datos al padre
+      // Enviar TODOS los datos al padre
       onDataScraped({
         xG: { home: data.homeTeam.xG, away: data.awayTeam.xG },
         xGA: { home: data.homeTeam.xGA, away: data.awayTeam.xGA },
         odds: allOdds,
+        goalsFor: { home: data.homeTeam.goalsScored, away: data.awayTeam.goalsScored },
+        goalsAgainst: { home: data.homeTeam.goalsConceded, away: data.awayTeam.goalsConceded },
+        leagueAvg: data.league?.avgGoals || data.league?.avgGoalsPerMatch || 0,
+        names: { home: data.homeTeam.name, away: data.awayTeam.name },
       });
 
       const bookmakers = allOdds.map(o => o.bookmaker).join(', ') || 'ninguna';

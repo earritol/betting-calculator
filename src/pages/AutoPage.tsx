@@ -5,10 +5,7 @@ import { ValidationDashboard } from '../components/validation/ValidationDashboar
 import { BettingCalculatorProvider, useBettingCalculatorContext } from '../context/BettingCalculatorContext';
 import { useBettingCalculator } from '../hooks/useBettingCalculator';
 import { XGRealtimeModule } from '../components/modules/XGRealtimeModule';
-import { MatchSelector } from '../components/auto/MatchSelector';
-import type { SelectedMatchData } from '../components/auto/MatchSelector';
 import { ApwinScraper } from '../components/auto/ApwinScraper';
-import { useAutoFill } from '../hooks/useAutoFill';
 
 // Definir los módulos disponibles
 const MODULES = {
@@ -67,30 +64,45 @@ function AutoNavigation({ currentModule, setCurrentModule }: {
 
 // Módulo Dixon-Coles con selector automático
 function DixonColesAutoModule() {
-  const { fillFromMatch, loading, status, error } = useAutoFill();
   const { matchData, updateMatchData } = useBettingCalculatorContext();
-  const [selectedLeague, setSelectedLeague] = useState('');
-
-  const handleMatchSelected = (data: SelectedMatchData) => {
-    const newMatchData = fillFromMatch(data);
-    if (newMatchData) {
-      updateMatchData(newMatchData);
-    }
-  };
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const handleScrapedData = (data: {
     xG: { home: number; away: number };
     xGA: { home: number; away: number };
     odds: { bookmaker: string; home: number; draw: number; away: number }[];
+    goalsFor?: { home: number; away: number };
+    goalsAgainst?: { home: number; away: number };
+    leagueAvg?: number;
+    names?: { home: string; away: string };
   }) => {
-    // Actualizar xG/xGA
     const updated = { ...matchData };
+
+    // Nombres
+    if (data.names) {
+      updated.local = { ...updated.local, name: data.names.home };
+      updated.visitor = { ...updated.visitor, name: data.names.away };
+    }
+
+    // Goles
+    if (data.goalsFor) {
+      updated.local = { ...updated.local, goalsFor: data.goalsFor.home };
+      updated.visitor = { ...updated.visitor, goalsFor: data.goalsFor.away };
+    }
+    if (data.goalsAgainst) {
+      updated.local = { ...updated.local, goalsAgainst: data.goalsAgainst.home };
+      updated.visitor = { ...updated.visitor, goalsAgainst: data.goalsAgainst.away };
+    }
+
+    // xG/xGA
     if (data.xG.home > 0) updated.local = { ...updated.local, xG: data.xG.home };
     if (data.xGA.home > 0) updated.local = { ...updated.local, xGA: data.xGA.home };
     if (data.xG.away > 0) updated.visitor = { ...updated.visitor, xG: data.xG.away };
     if (data.xGA.away > 0) updated.visitor = { ...updated.visitor, xGA: data.xGA.away };
 
-    // Usar la primera cuota disponible (prioridad: pinnacle > 1xbet > bet365)
+    // Cuotas (prioridad: pinnacle > 1xbet > bet365)
     const priority = ['pinnacle', '1xbet', 'bet365'];
     for (const bk of priority) {
       const odd = data.odds.find(o => o.bookmaker === bk);
@@ -100,22 +112,22 @@ function DixonColesAutoModule() {
       }
     }
 
+    // Promedios de liga
+    if (data.leagueAvg && data.leagueAvg > 0) {
+      updated.leagueAverages = {
+        avgGoalsFor: data.leagueAvg / 2,
+        avgGoalsAgainst: data.leagueAvg / 2,
+      };
+    }
+
     updateMatchData(updated);
   };
 
   return (
     <div>
-      {/* Selector de partidos (football-data.org) */}
-      <MatchSelector 
-        onMatchSelected={handleMatchSelected}
-        onLeagueChange={setSelectedLeague}
-        isLoading={loading}
-      />
-
-      {/* Scraper APWin (xG + cuotas) */}
+      {/* Scraper APWin - Fuente principal */}
       <ApwinScraper
         onDataScraped={handleScrapedData}
-        league={selectedLeague}
       />
 
       {/* Status */}
