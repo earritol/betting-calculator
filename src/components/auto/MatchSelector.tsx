@@ -14,10 +14,11 @@ export interface SelectedMatchData {
 
 interface MatchSelectorProps {
   onMatchSelected: (data: SelectedMatchData) => void;
+  onLeagueChange?: (leagueCode: string) => void;
   isLoading: boolean;
 }
 
-export const MatchSelector: React.FC<MatchSelectorProps> = ({ onMatchSelected, isLoading }) => {
+export const MatchSelector: React.FC<MatchSelectorProps> = ({ onMatchSelected, onLeagueChange, isLoading }) => {
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
   const [selectedCompetition, setSelectedCompetition] = useState<string>('');
@@ -52,6 +53,7 @@ export const MatchSelector: React.FC<MatchSelectorProps> = ({ onMatchSelected, i
     setMatches([]);
     setSelectedMatchId(null);
     setError(null);
+    onLeagueChange?.(code);
 
     if (!code) return;
 

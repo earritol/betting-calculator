@@ -7,6 +7,7 @@ import { useBettingCalculator } from '../hooks/useBettingCalculator';
 import { XGRealtimeModule } from '../components/modules/XGRealtimeModule';
 import { MatchSelector } from '../components/auto/MatchSelector';
 import type { SelectedMatchData } from '../components/auto/MatchSelector';
+import { ApwinScraper } from '../components/auto/ApwinScraper';
 import { useAutoFill } from '../hooks/useAutoFill';
 
 // Definir los módulos disponibles
@@ -67,21 +68,54 @@ function AutoNavigation({ currentModule, setCurrentModule }: {
 // Módulo Dixon-Coles con selector automático
 function DixonColesAutoModule() {
   const { fillFromMatch, loading, status, error } = useAutoFill();
-  const { updateMatchData } = useBettingCalculatorContext();
+  const { matchData, updateMatchData } = useBettingCalculatorContext();
+  const [selectedLeague, setSelectedLeague] = useState('');
 
   const handleMatchSelected = (data: SelectedMatchData) => {
-    const matchData = fillFromMatch(data);
-    if (matchData) {
-      updateMatchData(matchData);
+    const newMatchData = fillFromMatch(data);
+    if (newMatchData) {
+      updateMatchData(newMatchData);
     }
+  };
+
+  const handleScrapedData = (data: {
+    xG: { home: number; away: number };
+    xGA: { home: number; away: number };
+    odds: { bookmaker: string; home: number; draw: number; away: number }[];
+  }) => {
+    // Actualizar xG/xGA
+    const updated = { ...matchData };
+    if (data.xG.home > 0) updated.local = { ...updated.local, xG: data.xG.home };
+    if (data.xGA.home > 0) updated.local = { ...updated.local, xGA: data.xGA.home };
+    if (data.xG.away > 0) updated.visitor = { ...updated.visitor, xG: data.xG.away };
+    if (data.xGA.away > 0) updated.visitor = { ...updated.visitor, xGA: data.xGA.away };
+
+    // Usar la primera cuota disponible (prioridad: pinnacle > 1xbet > bet365)
+    const priority = ['pinnacle', '1xbet', 'bet365'];
+    for (const bk of priority) {
+      const odd = data.odds.find(o => o.bookmaker === bk);
+      if (odd && odd.home > 0) {
+        updated.odds = { local: odd.home, draw: odd.draw, visitor: odd.away };
+        break;
+      }
+    }
+
+    updateMatchData(updated);
   };
 
   return (
     <div>
-      {/* Selector de partidos */}
+      {/* Selector de partidos (football-data.org) */}
       <MatchSelector 
         onMatchSelected={handleMatchSelected}
+        onLeagueChange={setSelectedLeague}
         isLoading={loading}
+      />
+
+      {/* Scraper APWin (xG + cuotas) */}
+      <ApwinScraper
+        onDataScraped={handleScrapedData}
+        league={selectedLeague}
       />
 
       {/* Status */}
