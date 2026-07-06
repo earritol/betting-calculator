@@ -71,7 +71,7 @@ CREATE TABLE IF NOT EXISTS match_team_stats (
 CREATE TABLE IF NOT EXISTS match_odds (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   match_id UUID REFERENCES matches(id) ON DELETE CASCADE,
-  bookmaker TEXT NOT NULL CHECK (bookmaker IN ('bet365', '1xbet')),
+  bookmaker TEXT NOT NULL CHECK (bookmaker IN ('bet365', '1xbet', 'pinnacle')),
   home_odd NUMERIC(5,2),
   draw_odd NUMERIC(5,2),
   away_odd NUMERIC(5,2),

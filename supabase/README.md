@@ -38,7 +38,7 @@ VITE_SUPABASE_ANON_KEY=tu_anon_key
 ## Uso
 
 ### Edge Function: scrape-match
-Scrapea datos de un partido desde APWin.
+Scrapea datos de un partido desde APWin (xG, xGA, goles, etc.).
 
 **Request:**
 ```bash
@@ -48,38 +48,40 @@ curl -X POST https://TU_PROYECTO.supabase.co/functions/v1/scrape-match \
   -d '{"url": "https://www.apwin.com/es/partido/orgryte-hacken/bwnPVG/"}'
 ```
 
+### Edge Function: scrape-odds
+Obtiene cuotas de Pinnacle, 1xBet y Bet365.
+
+**Request:**
+```bash
+curl -X POST https://TU_PROYECTO.supabase.co/functions/v1/scrape-odds \
+  -H "Authorization: Bearer TU_ANON_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "homeTeam": "Arsenal",
+    "awayTeam": "Chelsea",
+    "league": "england",
+    "apwinUrl": "https://www.apwin.com/es/partido/arsenal-chelsea/xxxxx/"
+  }'
+```
+
 **Response:**
 ```json
 {
   "success": true,
-  "data": {
-    "homeTeam": {
-      "name": "Örgryte",
-      "goalsScored": 0.91,
-      "goalsConceded": 2.55,
-      "xG": 1.23,
-      "xGA": 1.94,
-      "xGHome": 1.39,
-      "xGAHome": 1.5
-    },
-    "awayTeam": {
-      "name": "Hacken",
-      "goalsScored": 2.0,
-      "goalsConceded": 1.4,
-      "xG": 1.61,
-      "xGA": 1.52,
-      "xGHome": 1.57,
-      "xGAHome": 1.62
-    },
-    "odds": {
-      "1xbet": { "home": 6.00, "draw": 4.71, "away": 1.53 }
-    },
-    "league": {
-      "avgGoals": 3.18
-    }
-  }
+  "odds": [
+    { "bookmaker": "pinnacle", "home": 1.85, "draw": 3.70, "away": 4.20, "source": "pinnacle_matchup_123" },
+    { "bookmaker": "1xbet", "home": 1.90, "draw": 3.60, "away": 4.10, "source": "apwin" }
+  ],
+  "available": { "pinnacle": true, "1xbet": true, "bet365": false }
 }
 ```
+
+**Fuentes de cuotas:**
+| Bookmaker | Fuente | Método |
+|-----------|--------|--------|
+| Pinnacle | guest.api.arcadia.pinnacle.com | API interna (JSON, sin auth) |
+| 1xBet | APWin | Scraping HTML |
+| Bet365 | Manual (futuro: OddsPortal) | Pendiente |
 
 ## Tablas
 
@@ -97,5 +99,6 @@ curl -X POST https://TU_PROYECTO.supabase.co/functions/v1/scrape-match \
 | Fuente | Datos | Método |
 |--------|-------|--------|
 | APWin | xG, xGA, goles, BTTS, Over/Under, cuotas 1xBet | Scraping HTML |
-| Bet365 | Cuotas 1X2 | Scraping (futuro) |
+| Pinnacle | Cuotas 1X2 (sharp) | Guest API interna (JSON) |
+| Bet365 | Cuotas 1X2 | Manual / futuro scraping |
 | football-data.org | GF, GA, fixtures, standings | API REST (free tier) |
