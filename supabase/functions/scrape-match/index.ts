@@ -19,6 +19,12 @@ interface TeamStats {
   goalsConcededHome: number;
   goalsScoredAway: number;
   goalsConcededAway: number;
+  xG: number;
+  xGA: number;
+  xGHome: number;
+  xGAHome: number;
+  xGAway: number;
+  xGAAway: number;
 }
 
 interface OddsEntry {
@@ -63,6 +69,24 @@ function parseApwinHtml(html: string): ScrapedResult | null {
     const marcados = statsRegex('Marcados');
     const sufridos = statsRegex('Sufridos');
 
+    // xG y xGA - tienen SVG/tooltips entre el label y </td>
+    // Patrón: xG\s*(?:<[^>]*>\s*)*</td>\s*<td...>valor</td>...
+    const xgStatsRegex = (label: string) => {
+      const pattern = new RegExp(
+        label + `\\s*(?:<[^>]*>\\s*)*</td>\\s*<td[^>]*>([\\d.]+)</td>\\s*<td[^>]*>([\\d.]+)\\s*</td>\\s*<td[^>]*>([\\d.]+)</td>`,
+        'g'
+      );
+      const matches = [...html.matchAll(pattern)];
+      return matches.map(m => ({
+        general: parseFloat(m[1]),
+        home: parseFloat(m[2]),
+        away: parseFloat(m[3]),
+      }));
+    };
+
+    const xgData = xgStatsRegex('xG');
+    const xgaData = xgStatsRegex('xGA');
+
     // Primera ocurrencia = equipo local, segunda = equipo visitante
     const homeStats: TeamStats = {
       name: homeName,
@@ -72,6 +96,12 @@ function parseApwinHtml(html: string): ScrapedResult | null {
       goalsConcededHome: sufridos[0]?.home || 0,
       goalsScoredAway: marcados[0]?.away || 0,
       goalsConcededAway: sufridos[0]?.away || 0,
+      xG: xgData[0]?.general || 0,
+      xGA: xgaData[0]?.general || 0,
+      xGHome: xgData[0]?.home || 0,
+      xGAHome: xgaData[0]?.home || 0,
+      xGAway: xgData[0]?.away || 0,
+      xGAAway: xgaData[0]?.away || 0,
     };
 
     const awayStats: TeamStats = {
@@ -82,6 +112,12 @@ function parseApwinHtml(html: string): ScrapedResult | null {
       goalsConcededHome: sufridos[1]?.home || 0,
       goalsScoredAway: marcados[1]?.away || 0,
       goalsConcededAway: sufridos[1]?.away || 0,
+      xG: xgData[1]?.general || 0,
+      xGA: xgaData[1]?.general || 0,
+      xGHome: xgData[1]?.home || 0,
+      xGAHome: xgaData[1]?.home || 0,
+      xGAway: xgData[1]?.away || 0,
+      xGAAway: xgaData[1]?.away || 0,
     };
 
     // === CUOTAS ===

@@ -10,6 +10,12 @@ interface ScrapedMatchData {
     goalsConcededHome: number;
     goalsScoredAway: number;
     goalsConcededAway: number;
+    xG: number;
+    xGA: number;
+    xGHome: number;
+    xGAHome: number;
+    xGAway: number;
+    xGAAway: number;
   };
   awayTeam: {
     name: string;
@@ -19,6 +25,12 @@ interface ScrapedMatchData {
     goalsConcededHome: number;
     goalsScoredAway: number;
     goalsConcededAway: number;
+    xG: number;
+    xGA: number;
+    xGHome: number;
+    xGAHome: number;
+    xGAway: number;
+    xGAAway: number;
   };
   odds: Array<{
     bookmaker: string;
@@ -82,8 +94,8 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
 
       // Enviar TODOS los datos al padre
       onDataScraped({
-        xG: { home: 0, away: 0 }, // xG requiere browser, se deja manual
-        xGA: { home: 0, away: 0 },
+        xG: { home: data.homeTeam.xG || 0, away: data.awayTeam.xG || 0 },
+        xGA: { home: data.homeTeam.xGA || 0, away: data.awayTeam.xGA || 0 },
         odds: allOdds,
         goalsFor: { home: data.homeTeam.goalsScored, away: data.awayTeam.goalsScored },
         goalsAgainst: { home: data.homeTeam.goalsConceded, away: data.awayTeam.goalsConceded },
