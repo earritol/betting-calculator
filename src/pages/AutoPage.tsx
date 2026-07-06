@@ -4,7 +4,7 @@ import { TeamDataForm } from '../components/data-input/TeamDataForm';
 import { ValidationDashboard } from '../components/validation/ValidationDashboard';
 import { BettingCalculatorProvider, useBettingCalculatorContext } from '../context/BettingCalculatorContext';
 import { useBettingCalculator } from '../hooks/useBettingCalculator';
-import { XGRealtimeModule } from '../components/modules/XGRealtimeModule';
+import { XGAutoModule } from '../components/auto/XGAutoModule';
 import { ApwinScraper } from '../components/auto/ApwinScraper';
 
 // Definir los módulos disponibles
@@ -157,7 +157,7 @@ function ModuleRenderer({ currentModule }: { currentModule: AppModule }) {
     case MODULES.DIXON_COLES:
       return <DixonColesAutoModule />;
     case MODULES.XG_REALTIME:
-      return <XGRealtimeModule />;
+      return <XGAutoModule />;
     default:
       return <DixonColesAutoModule />;
   }
