@@ -1,6 +1,45 @@
 import type { Probabilities } from '../types/betting';
 import { poissonPDF } from './poisson';
 
+export interface ScoreProbability {
+  home: number;
+  away: number;
+  probability: number;
+}
+
+export function getScoreMatrix(
+  lambdaLocal: number,
+  lambdaVisitor: number,
+  rho: number = 0.02
+): ScoreProbability[] {
+  const localLambda = Math.max(lambdaLocal, 0.1);
+  const visitorLambda = Math.max(lambdaVisitor, 0.1);
+  const correlation = Math.max(Math.min(rho, 0.15), -0.15);
+
+  const scores: ScoreProbability[] = [];
+
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const baseProb = poissonPDF(i, localLambda) * poissonPDF(j, visitorLambda);
+
+      let tau = 1;
+      if (i === 0 && j === 0) {
+        tau = 1 - (localLambda * visitorLambda * correlation);
+      } else if (i === 0 && j === 1) {
+        tau = 1 + (localLambda * correlation);
+      } else if (i === 1 && j === 0) {
+        tau = 1 + (visitorLambda * correlation);
+      } else if (i === 1 && j === 1) {
+        tau = 1 - correlation;
+      }
+
+      scores.push({ home: i, away: j, probability: baseProb * tau });
+    }
+  }
+
+  return scores.sort((a, b) => b.probability - a.probability);
+}
+
 export function calculateDixonColesProbabilities(
   lambdaLocal: number,
   lambdaVisitor: number,

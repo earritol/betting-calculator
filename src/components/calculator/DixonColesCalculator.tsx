@@ -1,5 +1,6 @@
 import React from 'react';
 import { useBettingCalculatorContext } from '../../context/BettingCalculatorContext';
+import { MatchAnalysis } from './MatchAnalysis';
 
 export const DixonColesCalculator: React.FC = () => {
   const { results, matchData } = useBettingCalculatorContext();
@@ -148,7 +149,7 @@ export const DixonColesCalculator: React.FC = () => {
       </div>
 
       {/* Probabilidades Finales */}
-      <div>
+      <div className="mb-8">
         <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center">
           <span className="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
           Probabilidades Finales
@@ -171,6 +172,9 @@ export const DixonColesCalculator: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Análisis del Partido */}
+      <MatchAnalysis results={results} matchData={matchData} />
     </div>
   );
 };

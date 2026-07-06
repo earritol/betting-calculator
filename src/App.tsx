@@ -70,16 +70,16 @@ function DixonColesModule() {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           <TeamDataForm />
         </div>
+        
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+          <ValidationDashboard />
+        </div>
       </div>
       
       {/* Columna derecha - Cálculos y resultados */}
       <div className="space-y-8">
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
           <DixonColesCalculator />
-        </div>
-        
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          <ValidationDashboard />
         </div>
       </div>
     </div>
