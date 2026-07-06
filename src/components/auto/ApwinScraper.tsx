@@ -68,7 +68,34 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<string | null>(null);
-  const [selectedBookmaker, setSelectedBookmaker] = useState<string>('pinnacle');
+  const [selectedBookmaker, setSelectedBookmaker] = useState<string>('1xbet');
+  const [scrapedData, setScrapedData] = useState<ScrapedMatchData | null>(null);
+
+  // Cuando cambia el bookmaker seleccionado, re-enviar datos con esa cuota
+  const sendDataWithBookmaker = (data: ScrapedMatchData, bookmaker: string) => {
+    const allOdds: OddsData[] = data.odds || [];
+    
+    // Buscar la cuota del bookmaker seleccionado, o fallback a la primera disponible
+    const selectedOdd = allOdds.find(o => o.bookmaker === bookmaker) || allOdds[0];
+    const oddsToSend = selectedOdd ? [selectedOdd] : [];
+
+    onDataScraped({
+      xG: { home: data.homeTeam.xG || 0, away: data.awayTeam.xG || 0 },
+      xGA: { home: data.homeTeam.xGA || 0, away: data.awayTeam.xGA || 0 },
+      odds: oddsToSend,
+      goalsFor: { home: data.homeTeam.goalsScored, away: data.awayTeam.goalsScored },
+      goalsAgainst: { home: data.homeTeam.goalsConceded, away: data.awayTeam.goalsConceded },
+      leagueAvg: data.league?.avgGoalsPerMatch || 0,
+      names: { home: data.homeTeam.name, away: data.awayTeam.name },
+    });
+  };
+
+  const handleBookmakerChange = (bk: string) => {
+    setSelectedBookmaker(bk);
+    if (scrapedData) {
+      sendDataWithBookmaker(scrapedData, bk);
+    }
+  };
 
   const handleScrape = async () => {
     if (!apwinUrl.trim()) return;
@@ -78,7 +105,6 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
     setResult(null);
 
     try {
-      // Scrape APWin
       const matchData = await callEdgeFunction<{ success: boolean; data: ScrapedMatchData }>('scrape-match', {
         url: apwinUrl.trim(),
       });
@@ -88,23 +114,13 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
       }
 
       const { data } = matchData;
+      setScrapedData(data);
 
-      // Las cuotas vienen directamente como array del nuevo parser
-      const allOdds: OddsData[] = data.odds || [];
+      // Enviar datos con el bookmaker actualmente seleccionado
+      sendDataWithBookmaker(data, selectedBookmaker);
 
-      // Enviar TODOS los datos al padre
-      onDataScraped({
-        xG: { home: data.homeTeam.xG || 0, away: data.awayTeam.xG || 0 },
-        xGA: { home: data.homeTeam.xGA || 0, away: data.awayTeam.xGA || 0 },
-        odds: allOdds,
-        goalsFor: { home: data.homeTeam.goalsScored, away: data.awayTeam.goalsScored },
-        goalsAgainst: { home: data.homeTeam.goalsConceded, away: data.awayTeam.goalsConceded },
-        leagueAvg: data.league?.avgGoalsPerMatch || 0,
-        names: { home: data.homeTeam.name, away: data.awayTeam.name },
-      });
-
-      const bookmakers = allOdds.map(o => o.bookmaker).join(', ') || 'ninguna';
-      setResult(`✅ Datos extraídos. Cuotas: ${bookmakers}. xG/xGA: ingresa manualmente.`);
+      const bookmakers = (data.odds || []).map((o: OddsData) => o.bookmaker).join(', ') || 'ninguna';
+      setResult(`✅ Datos extraídos. Cuotas disponibles: ${bookmakers}`);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -151,7 +167,7 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
           {['pinnacle', '1xbet', 'bet365'].map((bk) => (
             <button
               key={bk}
-              onClick={() => setSelectedBookmaker(bk)}
+              onClick={() => handleBookmakerChange(bk)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
                 selectedBookmaker === bk
                   ? 'border-purple-500 bg-purple-50 text-purple-700'
