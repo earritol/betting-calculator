@@ -40,6 +40,7 @@ interface ScrapedMatchData {
   }>;
   league: {
     avgGoalsPerMatch: number;
+    detectedCode?: string;
   };
   matchDate: string;
 }
@@ -116,22 +117,24 @@ export const ApwinScraper: React.FC<ApwinScraperProps> = ({ onDataScraped }) => 
       const { data } = matchData;
 
       // Intentar obtener cuotas de Pinnacle vía scrape-odds
-      try {
-        const pinnacleData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
-          homeTeam: data.homeTeam.name,
-          awayTeam: data.awayTeam.name,
-          league: detectLeague(apwinUrl),
-        });
+      const leagueCode = data.league?.detectedCode || detectLeague(apwinUrl);
+      if (leagueCode) {
+        try {
+          const pinnacleData = await callEdgeFunction<{ success: boolean; odds: OddsData[] }>('scrape-odds', {
+            homeTeam: data.homeTeam.name,
+            awayTeam: data.awayTeam.name,
+            league: leagueCode,
+          });
 
-        if (pinnacleData.success && pinnacleData.odds) {
-          // Agregar cuotas de Pinnacle al array de odds del data
-          const pinnacleOdds = pinnacleData.odds.filter((o: OddsData) => o.bookmaker === 'pinnacle');
-          if (pinnacleOdds.length > 0) {
-            data.odds = [...(data.odds || []), ...pinnacleOdds];
+          if (pinnacleData.success && pinnacleData.odds) {
+            const pinnacleOdds = pinnacleData.odds.filter((o: OddsData) => o.bookmaker === 'pinnacle');
+            if (pinnacleOdds.length > 0) {
+              data.odds = [...(data.odds || []), ...pinnacleOdds];
+            }
           }
+        } catch {
+          console.warn('Pinnacle odds not available');
         }
-      } catch {
-        console.warn('Pinnacle odds not available');
       }
 
       setScrapedData(data);

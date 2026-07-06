@@ -40,6 +40,7 @@ interface ScrapedResult {
   odds: OddsEntry[];
   league: {
     avgGoalsPerMatch: number;
+    detectedCode: string; // para Pinnacle lookup
   };
   matchDate: string;
 }
@@ -159,11 +160,35 @@ function parseApwinHtml(html: string): ScrapedResult | null {
     const dateMatch = html.match(/(\w{3},\s*\d+\s+\w+\s+\d{4}\s*-\s*\d{2}:\d{2})/);
     const matchDate = dateMatch ? dateMatch[1] : "";
 
+    // === DETECTAR CÓDIGO DE LIGA para Pinnacle ===
+    const leagueDetectMap: Record<string, string[]> = {
+      'england': ['England', 'Premier League', 'Inglaterra'],
+      'spain': ['Spain', 'La Liga', 'España', 'LaLiga'],
+      'italy': ['Italy', 'Serie A', 'Italia'],
+      'germany': ['Germany', 'Bundesliga', 'Alemania'],
+      'france': ['France', 'Ligue 1', 'Francia'],
+      'brazil': ['Brazil', 'Brasileirão', 'Brasil'],
+      'mexico': ['Mexico', 'Liga MX', 'México'],
+      'netherlands': ['Netherlands', 'Eredivisie', 'Holanda'],
+      'portugal': ['Portugal', 'Primeira Liga'],
+      'sweden': ['Sweden', 'Allsvenskan', 'Suecia'],
+      'champions_league': ['Champions League', 'UCL'],
+      'world': ['World Cup', 'Copa del Mundo', 'Mundial'],
+    };
+
+    let detectedCode = '';
+    for (const [code, patterns] of Object.entries(leagueDetectMap)) {
+      if (patterns.some(p => html.includes(p))) {
+        detectedCode = code;
+        break;
+      }
+    }
+
     return {
       homeTeam: homeStats,
       awayTeam: awayStats,
       odds,
-      league: { avgGoalsPerMatch: avgGoals },
+      league: { avgGoalsPerMatch: avgGoals, detectedCode },
       matchDate,
     };
   } catch (error) {
