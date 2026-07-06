@@ -13,3 +13,9 @@ major_version = 15
 [studio]
 enabled = true
 port = 54323
+
+[functions.scrape-match]
+verify_jwt = false
+
+[functions.scrape-odds]
+verify_jwt = false
