@@ -21,7 +21,7 @@ export const SmartInterpretation: React.FC<SmartInterpretationProps> = ({
   results, matchData, attackLocal, defenseLocal, attackVisitor, defenseVisitor
 }) => {
   const { lambdaFinalLocal, lambdaFinalVisitor } = results.params;
-  const { local: probLocal, draw: probDraw, visitor: probVisitor } = results.probabilities;
+  const { draw: probDraw } = results.probabilities;
   const localName = matchData.local.name || 'Local';
   const visitorName = matchData.visitor.name || 'Visitante';
 
@@ -39,7 +39,6 @@ export const SmartInterpretation: React.FC<SmartInterpretationProps> = ({
   // Determinar favorito
   const favoritoLocal = lambdaFinalLocal > lambdaFinalVisitor;
   const favoritoName = favoritoLocal ? localName : visitorName;
-  const noFavoritoName = favoritoLocal ? visitorName : localName;
 
   // === PASO 2: Comparativa Ofensiva ===
   const getOfensiveMsg = (): string => {
