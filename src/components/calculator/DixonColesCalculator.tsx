@@ -1,6 +1,7 @@
 import React from 'react';
 import { useBettingCalculatorContext } from '../../context/BettingCalculatorContext';
 import { MatchAnalysis } from './MatchAnalysis';
+import { SmartInterpretation } from './SmartInterpretation';
 
 export const DixonColesCalculator: React.FC = () => {
   const { results, matchData } = useBettingCalculatorContext();
@@ -175,6 +176,16 @@ export const DixonColesCalculator: React.FC = () => {
 
       {/* Análisis del Partido */}
       <MatchAnalysis results={results} matchData={matchData} />
+
+      {/* Interpretación Inteligente */}
+      <SmartInterpretation 
+        results={results} 
+        matchData={matchData}
+        attackLocal={attackLocal}
+        defenseLocal={defenseLocal}
+        attackVisitor={attackVisitor}
+        defenseVisitor={defenseVisitor}
+      />
     </div>
   );
 };
