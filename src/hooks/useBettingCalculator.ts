@@ -35,12 +35,19 @@ export const useBettingCalculator = () => {
         const attackVisitor = limitValue(matchData.visitor.goalsFor / matchData.leagueAverages.avgGoalsFor);
         const defenseVisitor = limitValue(matchData.visitor.goalsAgainst / matchData.leagueAverages.avgGoalsAgainst);
 
-        // Calcular lambdas (modelo actual - no modificar)
+        // Calcular lambdas (modelo Dixon-Coles corregido)
+        // Lambda Local = Ataque_Local × Defensa_Visitante × Promedio_GF_Liga
+        // Lambda Visitante = Ataque_Visitante × Defensa_Local × Promedio_GA_Liga
         const lambdaLocal = attackLocal * defenseVisitor * matchData.leagueAverages.avgGoalsFor;
-        const lambdaVisitor = attackVisitor * defenseLocal * matchData.leagueAverages.avgGoalsFor;
+        const lambdaVisitor = attackVisitor * defenseLocal * matchData.leagueAverages.avgGoalsAgainst;
+        
+        // Factor de corrección Dixon-Coles para partidos desequilibrados
         const correctionFactor = 1 - (0.03 * Math.abs(lambdaLocal - lambdaVisitor));
-        const lambdaLocalAdjusted = lambdaLocal * correctionFactor * 0.8;
-        const lambdaVisitorAdjusted = lambdaVisitor * correctionFactor;
+        
+        // Ventaja de local explícita (+5% local, -5% visitante)
+        const HOME_ADVANTAGE = 1.05;
+        const lambdaLocalAdjusted = lambdaLocal * correctionFactor * HOME_ADVANTAGE;
+        const lambdaVisitorAdjusted = lambdaVisitor * correctionFactor / HOME_ADVANTAGE;
 
         // PASO 4-5: Calcular Lambda xG (independiente del modelo actual)
         const xGLocal = matchData.local.xG || 0;
